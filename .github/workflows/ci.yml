@@ -53,8 +53,8 @@ jobs:
       - name: Install mdbook
         run: cargo install mdbook
       - name: Tests
-        run: cargo test --all-features
+        run: cargo test -r --all-features
       - name: Test book
-        run: mdbook test book -L target/debug/deps
+        run: mdbook test book -L target/release/deps
       - name: Check
         run: cargo check --all-features
