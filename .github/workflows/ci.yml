@@ -15,7 +15,22 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
+  formatting_and_linting:
+    runs-on: ubuntu-latest
+    steps:
+      -   uses: actions/checkout@v3
+      -   uses: actions-rs/toolchain@v1
+          with:
+            toolchain: stable
+            override: true
+            components: clippy, rustfmt
+      -   name: Linting
+          run: cargo clippy
+      -   name: Formatting
+          run: cargo fmt --all -- --check
   pull_request:
+    needs:
+      - formatting_and_linting
     strategy:
       fail-fast: false
       matrix:
@@ -37,13 +52,9 @@ jobs:
           components: clippy, rustfmt
       - name: Install mdbook
         run: cargo install mdbook
-      - name: Linting
-        run: cargo clippy
-      - name: Formatting
-        run: cargo fmt
       - name: Tests
         run: cargo test --all-features
       - name: Test book
         run: mdbook test book -L target/debug/deps
-      - name: Build
-        run: cargo build
+      - name: Check
+        run: cargo check --all-features
