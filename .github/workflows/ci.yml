@@ -222,7 +222,7 @@ jobs:
             toolchain: ${{ matrix.toolchain }}
             override: true
             components: mdbook
-      -   run: cargo install mdbook
+
       -   run: make test.book
 
   wasm:
