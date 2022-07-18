@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: ["master"]
+    branches: ["tests"]
     tags: ["juniper*@*"]
   pull_request:
     branches: ["master"]
@@ -21,7 +21,6 @@ jobs:
   ################
 
   pr:
-    if: ${{ github.event_name == 'pull_request' }}
     needs:
       - clippy
       - example
@@ -198,9 +197,6 @@ jobs:
             toolchain: beta
           - crate: juniper_book_tests
             toolchain: nightly
-          # TODO: LLVM ERROR: out of memory
-          - crate: juniper_integration_tests
-            os: windows
 
     runs-on: ${{ matrix.os }}-latest
     steps:
@@ -341,29 +337,3 @@ jobs:
 
 
 
-  ##########
-  # Deploy #
-  ##########
-
-  deploy-book:
-    name: deploy Book
-    needs: ["test"]
-    if: ${{ github.ref == 'refs/heads/master'
-            || startsWith(github.ref, 'refs/tags/juniper@') }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: peaceiris/actions-mdbook@v1
-
-      - run: make book.build out=gh-pages/master
-        if: ${{ github.ref == 'refs/heads/master' }}
-
-      - run: make book.build out=gh-pages
-        if: ${{ startsWith(github.ref, 'refs/tags/juniper@') }}
-
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          keep_files: true
-          publish_dir: book/gh-pages
