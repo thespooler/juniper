@@ -1,8 +1,8 @@
 `juniper_axum` crate
 ====================
 
-[![Crates.io](https://img.shields.io/crates/v/juniper_axum.svg?maxAge=2592000)](https://crates.io/crates/juniper_warp)
-[![Documentation](https://docs.rs/juniper_warp/badge.svg)](https://docs.rs/juniper_warp)
+[![Crates.io](https://img.shields.io/crates/v/juniper_axum.svg?maxAge=2592000)](https://crates.io/crates/juniper_axum)
+[![Documentation](https://docs.rs/juniper_axum/badge.svg)](https://docs.rs/juniper_axum)
 [![CI](https://github.com/graphql-rust/juniper/workflows/CI/badge.svg?branch=master "CI")](https://github.com/graphql-rust/juniper/actions?query=workflow%3ACI+branch%3Amaster)
 
 - [Changelog](https://github.com/graphql-rust/juniper/blob/master/juniper_axum/CHANGELOG.md)
@@ -89,5 +89,3 @@ This project is licensed under [BSD 2-Clause License](https://github.com/graphql
 [GraphQL]: http://graphql.org
 [Juniper Book]: https://graphql-rust.github.io
 [Rust]: https://www.rust-lang.org
-
-[1]: https://github.com/graphql-rust/juniper/blob/master/juniper_warp/examples/warp_server.rs

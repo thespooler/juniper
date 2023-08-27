@@ -347,7 +347,7 @@ fn playground_response(
 pub mod subscriptions {
     use std::{fmt, sync::Arc};
 
-    use futures::TryStreamExt as _;
+    use futures::TryStreamExt;
     use juniper::{
         futures::{
             future::{self, Either},
@@ -387,7 +387,7 @@ pub mod subscriptions {
         /// while deserializing incoming messages are handled internally by the protocol.
         Serde(serde_json::Error),
 
-        /// Errors that can happen while communication with Juniper
+        /// Errors that can happen while communicating with Juniper
         Juniper(juniper_graphql_ws::WebsocketError),
     }
 
@@ -404,6 +404,12 @@ pub mod subscriptions {
             Self::Warp(err)
         }
     }
+
+    // impl From<Infallible> for Error {
+    //     fn from(_err: Infallible) -> Self {
+    //         unreachable!()
+    //     }
+    // }
 
     impl From<juniper_graphql_ws::WebsocketError> for Error {
         fn from(err: juniper_graphql_ws::WebsocketError) -> Self {

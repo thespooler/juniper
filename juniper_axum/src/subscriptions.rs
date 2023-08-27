@@ -5,6 +5,7 @@ use juniper::{
     futures::{SinkExt, StreamExt, TryStreamExt},
     ScalarValue,
 };
+
 use juniper_graphql_ws::{ClientMessage, Connection, ConnectionConfig, Schema, WebsocketError};
 
 #[derive(Debug)]
