@@ -345,8 +345,9 @@ fn playground_response(
 /// [1]: https://github.com/apollographql/subscriptions-transport-ws/blob/master/PROTOCOL.md
 #[cfg(feature = "subscriptions")]
 pub mod subscriptions {
-    use std::{convert::Infallible, fmt, sync::Arc};
+    use std::{fmt, sync::Arc};
 
+    use futures::TryStreamExt as _;
     use juniper::{
         futures::{
             future::{self, Either},
@@ -385,14 +386,14 @@ pub mod subscriptions {
         /// Errors that can happen while serializing outgoing messages. Note that errors that occur
         /// while deserializing incoming messages are handled internally by the protocol.
         Serde(serde_json::Error),
+
+        /// Errors that can happen while communication with Juniper
+        Juniper(juniper_graphql_ws::WebsocketError),
     }
 
     impl fmt::Display for Error {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            match self {
-                Self::Warp(e) => write!(f, "warp error: {e}"),
-                Self::Serde(e) => write!(f, "serde error: {e}"),
-            }
+            write!(f, "{:?}", self)
         }
     }
 
@@ -404,9 +405,9 @@ pub mod subscriptions {
         }
     }
 
-    impl From<Infallible> for Error {
-        fn from(_err: Infallible) -> Self {
-            unreachable!()
+    impl From<juniper_graphql_ws::WebsocketError> for Error {
+        fn from(err: juniper_graphql_ws::WebsocketError) -> Self {
+            Self::Juniper(err)
         }
     }
 
@@ -441,7 +442,7 @@ pub mod subscriptions {
             juniper_graphql_ws::Connection::new(juniper_graphql_ws::ArcSchema(root_node), init)
                 .split();
 
-        let ws_rx = ws_rx.map(|r| r.map(Message));
+        let ws_rx = ws_rx.map(|r| r.map(Message)).map_err(Error::Warp);
         let s_rx = s_rx.map(|msg| {
             serde_json::to_string(&msg)
                 .map(warp::ws::Message::text)
@@ -454,7 +455,7 @@ pub mod subscriptions {
         )
         .await
         {
-            Either::Left((r, _)) => r.map_err(|e| e.into()),
+            Either::Left((r, _)) => r,
             Either::Right((r, _)) => r,
         }
     }

@@ -400,6 +400,9 @@ pub mod tests {
         println!("  - test_get_with_variables");
         test_get_with_variables(integration);
 
+        println!("  - test_post_with_variables");
+        test_post_with_variables(integration);
+
         println!("  - test_simple_post");
         test_simple_post(integration);
 
@@ -484,6 +487,40 @@ pub mod tests {
         // with variables = { "id": "1000" }
         let response = integration.get(
             "/?query=query(%24id%3A%20String!)%20%7B%20human(id%3A%20%24id)%20%7B%20id%2C%20name%2C%20appearsIn%2C%20homePlanet%20%7D%20%7D&variables=%7B%20%22id%22%3A%20%221000%22%20%7D");
+
+        assert_eq!(response.status_code, 200);
+        assert_eq!(response.content_type, "application/json");
+
+        assert_eq!(
+            unwrap_json_response(&response),
+            serde_json::from_str::<Json>(
+                r#"{
+                    "data": {
+                        "human": {
+                            "appearsIn": [
+                                "NEW_HOPE",
+                                "EMPIRE",
+                                "JEDI"
+                                ],
+                                "homePlanet": "Tatooine",
+                                "name": "Luke Skywalker",
+                                "id": "1000"
+                            }
+                        }
+                    }"#
+            )
+            .expect("Invalid JSON constant in test")
+        );
+    }
+
+    fn test_post_with_variables<T: HttpIntegration>(integration: &T) {
+        let response = integration.post_json(
+            "/",
+            r#"{
+            "query": "query($id: String!) { human(id: $id) { id, name, appearsIn, homePlanet } }",
+            "variables": { "id": "1000" }
+        }"#,
+        );
 
         assert_eq!(response.status_code, 200);
         assert_eq!(response.content_type, "application/json");
@@ -690,7 +727,7 @@ pub mod tests {
                 r#"{
                     "type":"connection_error",
                     "payload":{
-                        "message":"serde error: expected value at line 1 column 1"
+                        "message":"expected value at line 1 column 1"
                     }
                 }"#
                 .into(),

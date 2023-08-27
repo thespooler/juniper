@@ -17,6 +17,7 @@ use std::{
     sync::Arc, time::Duration,
 };
 
+use derive_more::Display;
 use juniper::{
     futures::{
         channel::oneshot,
@@ -27,6 +28,18 @@ use juniper::{
     },
     GraphQLError, RuleError, ScalarValue, Variables,
 };
+
+/// Errors
+#[derive(Clone, Copy, Debug, Display)]
+pub enum WebsocketError {
+    /// The connection was already closed.
+    #[display(fmt = "Websocket connection was already closed.")]
+    ConnectionAlreadyClosed,
+
+    /// The connection is not ready to accept messages yet.
+    #[display(fmt = "The Websocket connection is not ready to accept messages yet.")]
+    ConnectionNotReady,
+}
 
 struct ExecutionParams<S: Schema> {
     start_payload: StartPayload<S::ScalarValue>,
@@ -515,7 +528,7 @@ where
     S: Schema,
     I: Init<S::ScalarValue, S::Context> + Send,
 {
-    type Error = Infallible;
+    type Error = WebsocketError;
 
     fn poll_ready(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), Self::Error>> {
         match &mut self.sink_state {
@@ -530,7 +543,9 @@ where
                     Poll::Pending => Poll::Pending,
                 }
             }
-            ConnectionSinkState::Closed => panic!("poll_ready called after close"),
+            ConnectionSinkState::Closed => {
+                Poll::Ready(Err(WebsocketError::ConnectionAlreadyClosed))
+            }
         }
     }
 
@@ -557,7 +572,7 @@ where
                     }
                 }
             }
-            _ => panic!("start_send called when not ready"),
+            _ => return Err(WebsocketError::ConnectionNotReady),
         };
         Ok(())
     }
