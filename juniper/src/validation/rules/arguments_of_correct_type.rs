@@ -50,7 +50,7 @@ where
     fn enter_argument(
         &mut self,
         ctx: &mut ValidatorContext<'a, S>,
-        &(ref arg_name, ref arg_value): &'a (Spanning<&'a str>, Spanning<InputValue<S>>),
+        (arg_name, arg_value): &'a (Spanning<&'a str>, Spanning<InputValue<S>>),
     ) {
         if let Some(argument_meta) = self
             .current_args
@@ -83,13 +83,27 @@ mod tests {
     };
 
     #[test]
-    fn good_null_value() {
+    fn null_into_nullable_int() {
         expect_passes_rule::<_, _, DefaultScalarValue>(
             factory,
             r#"
             {
               complicatedArgs {
                 intArgField(intArg: null)
+              }
+            }
+        "#,
+        );
+    }
+
+    #[test]
+    fn null_into_nullable_list() {
+        expect_passes_rule::<_, _, DefaultScalarValue>(
+            factory,
+            r#"
+            {
+              complicatedArgs {
+                stringListArgField(stringListArg: null)
               }
             }
         "#,
@@ -110,6 +124,24 @@ mod tests {
             &[RuleError::new(
                 &error_message("nonNullIntArg", "Int!"),
                 &[SourcePosition::new(97, 3, 50)],
+            )],
+        );
+    }
+
+    #[test]
+    fn null_into_list() {
+        expect_fails_rule::<_, _, DefaultScalarValue>(
+            factory,
+            r#"
+            {
+              complicatedArgs {
+                nonNullStringListArgField(nonNullStringListArg: null)
+              }
+            }
+        "#,
+            &[RuleError::new(
+                &error_message("nonNullStringListArg", "[String!]!"),
+                &[SourcePosition::new(111, 3, 64)],
             )],
         );
     }

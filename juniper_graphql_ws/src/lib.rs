@@ -1,6 +1,5 @@
 #![doc = include_str!("../README.md")]
-#![deny(missing_docs)]
-#![deny(warnings)]
+#![deny(missing_docs, warnings)]
 
 mod client_message;
 pub use client_message::*;
@@ -315,8 +314,7 @@ impl<S: Schema, I: Init<S::ScalarValue, S::Context>> ConnectionState<S, I> {
             Err(e) => {
                 return Reaction::ServerMessage(ServerMessage::Error {
                     id: id.clone(),
-                    // e only references data owned by params. The new ErrorPayload will continue to keep that data alive.
-                    payload: unsafe { ErrorPayload::new_unchecked(Box::new(params.clone()), e) },
+                    payload: ErrorPayload::new(Box::new(params.clone()), e),
                 })
                 .into_stream();
             }
@@ -434,10 +432,7 @@ impl<S: Schema> Stream for SubscriptionStart<S> {
                             return Poll::Ready(Some(Reaction::ServerMessage(
                                 ServerMessage::Error {
                                     id: id.clone(),
-                                    // e only references data owned by params. The new ErrorPayload will continue to keep that data alive.
-                                    payload: unsafe {
-                                        ErrorPayload::new_unchecked(Box::new(params.clone()), e)
-                                    },
+                                    payload: ErrorPayload::new(Box::new(params.clone()), e),
                                 },
                             )));
                         }
@@ -881,7 +876,7 @@ mod test {
             ServerMessage::Error { id, .. } => {
                 assert_eq!(id, "bar");
             }
-            msg @ _ => panic!("expected error, got: {msg:?}"),
+            msg => panic!("expected error, got: {msg:?}"),
         }
     }
 
@@ -919,10 +914,10 @@ mod test {
                         item: ParseError::UnexpectedToken(token),
                         ..
                     }) => assert_eq!(token, "asd"),
-                    p @ _ => panic!("expected graphql parse error, got: {p:?}"),
+                    p => panic!("expected graphql parse error, got: {p:?}"),
                 }
             }
-            msg @ _ => panic!("expected error, got: {msg:?}"),
+            msg => panic!("expected error, got: {msg:?}"),
         }
     }
 
@@ -1023,7 +1018,7 @@ mod test {
                 assert_eq!(data, graphql_value!({ "error": null }));
                 assert_eq!(errors.len(), 1);
             }
-            msg @ _ => panic!("expected data, got: {msg:?}"),
+            msg => panic!("expected data, got: {msg:?}"),
         }
     }
 }

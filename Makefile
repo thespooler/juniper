@@ -93,18 +93,33 @@ test.book:
 ifeq ($(clean),yes)
 	cargo clean
 endif
+	$(eval target := $(strip $(shell cargo -vV | sed -n 's/host: //p')))
 	cargo build
-	mdbook test book -L target/debug/deps
+	mdbook test book -L target/debug/deps $(strip \
+		$(if $(call eq,$(findstring windows,$(target)),),,\
+			$(shell cargo metadata -q \
+			        | jq -r '.packages[] | select(.name == "windows_$(word 1,$(subst -, ,$(target)))_$(word 4,$(subst -, ,$(target)))") | .manifest_path' \
+			        | sed -e "s/^/-L '/" -e 's/Cargo.toml/lib/' -e "s/$$/'/" )))
 
 
 # Run Rust tests of project crates.
 #
 # Usage:
-#	make test.cargo [crate=<crate-name>]
+#	make test.cargo [crate=<crate-name>] [careful=(no|yes)]
 
 test.cargo:
-	cargo $(if $(call eq,$(crate),juniper_codegen_tests),+nightly,) test \
-		$(if $(call eq,$(crate),),--workspace,-p $(crate)) --all-features
+ifeq ($(careful),yes)
+ifeq ($(shell cargo install --list | grep cargo-careful),)
+	cargo install cargo-careful
+endif
+ifeq ($(shell rustup component list --toolchain=nightly \
+              | grep 'rust-src (installed)'),)
+	rustup component add --toolchain=nightly rust-src
+endif
+endif
+	cargo $(if $(call eq,$(careful),yes),+nightly careful,\
+	      $(if $(call eq,$(crate),juniper_codegen_tests),+nightly,)) \
+		test $(if $(call eq,$(crate),),--workspace,-p $(crate)) --all-features
 
 
 

@@ -1,10 +1,10 @@
-use std::{any::Any, fmt, marker::PhantomPinned, mem};
+use std::{any::Any, fmt, marker::PhantomPinned};
 
 use juniper::{ExecutionError, GraphQLError, Value};
 use serde::{Serialize, Serializer};
 
 /// The payload for errors that are not associated with a GraphQL operation.
-#[derive(Debug, Serialize, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ConnectionErrorPayload {
     /// The error message.
@@ -37,15 +37,12 @@ pub struct ErrorPayload {
 }
 
 impl ErrorPayload {
-    /// For this to be okay, the caller must guarantee that the error can only reference data from
-    /// execution_params and that execution_params has not been modified or moved.
-    pub(crate) unsafe fn new_unchecked(
-        execution_params: Box<dyn Any + Send>,
-        error: GraphQLError,
-    ) -> Self {
+    /// Creates a new [`ErrorPayload`] out of the provide `execution_params` and
+    /// [`GraphQLError`].
+    pub(crate) fn new(execution_params: Box<dyn Any + Send>, error: GraphQLError) -> Self {
         Self {
             _execution_params: Some(execution_params),
-            error: mem::transmute(error),
+            error,
             _marker: PhantomPinned,
         }
     }
@@ -147,12 +144,12 @@ mod test {
                 },
             })
             .unwrap(),
-            r##"{"type":"connection_error","payload":{"message":"foo"}}"##,
+            r#"{"type":"connection_error","payload":{"message":"foo"}}"#,
         );
 
         assert_eq!(
             serde_json::to_string(&ServerMessage::ConnectionAck).unwrap(),
-            r##"{"type":"connection_ack"}"##,
+            r#"{"type":"connection_ack"}"#,
         );
 
         assert_eq!(
@@ -164,7 +161,7 @@ mod test {
                 },
             })
             .unwrap(),
-            r##"{"type":"data","id":"foo","payload":{"data":null}}"##,
+            r#"{"type":"data","id":"foo","payload":{"data":null}}"#,
         );
 
         assert_eq!(
@@ -173,17 +170,17 @@ mod test {
                 payload: GraphQLError::UnknownOperationName.into(),
             })
             .unwrap(),
-            r##"{"type":"error","id":"foo","payload":[{"message":"Unknown operation"}]}"##,
+            r#"{"type":"error","id":"foo","payload":[{"message":"Unknown operation"}]}"#,
         );
 
         assert_eq!(
             serde_json::to_string(&ServerMessage::Complete { id: "foo".into() }).unwrap(),
-            r##"{"type":"complete","id":"foo"}"##,
+            r#"{"type":"complete","id":"foo"}"#,
         );
 
         assert_eq!(
             serde_json::to_string(&ServerMessage::ConnectionKeepAlive).unwrap(),
-            r##"{"type":"ka"}"##,
+            r#"{"type":"ka"}"#,
         );
     }
 }
